@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style></style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="input-wrapper">
+      <h1 class="title-text">店の情報を追加</h1>
+      <input id="name" class="item" type="text" placeholder="店の名前">
+      <input id="url" class="item" type="text" placeholder="画像URL">
+      <input id="address" class="item" type="text" placeholder="住所">
+      <input id="distance" class="item" type="text" placeholder="距離">
+      <input id="price" class="item" type="text" placeholder="価格帯">
+      <input id="tag" class="item" type="text" placeholder="タグ">
+      <input id="businessHours" class="item" type="text" placeholder="営業時間">
+      <input id="longtitude" class="item" type="text" placeholder="経度">
+      <input id="latitude" class="item" type="text" placeholder="緯度">
+      <input id="commentInput" class="item" type="text" placeholder="コメント">
+      <p id="addCommentButton" class="add-btn">+</p>
+      <div id="commentList"></div>
+      <input class="submit-btn" type="button" value="追加" onclick="submitData">
+      <img id="snail" class="snail" src="./snail.svg" alt="">
+    </div>
+    <script>
+      window.onload = function () {
+        var img = document.getElementById('snail');
+        var speedX = 0.1; // x方向の速度
+        var speedY = 0.1; // y方向の速度
+        var posX = 0; // 初期x座標
+
+        // 初期y座標を0からwindow.innerHeightの間でランダムに設定
+        var posY = getRandomPosition(window.innerHeight - img.offsetHeight);
+        // 0から指定したmax値までのランダムな数を生成
+        function getRandomPosition(max) {
+          return Math.floor(Math.random() * max);
+        }
+        function animate() {
+          posX = posX + speedX; // x座標を更新
+          posY = posY + speedY; // y座標を更新
+
+          // 画像がページの右端に達したら向きを反転
+          if (posX >= window.innerWidth - img.offsetWidth) {
+            speedX = -0.1;
+          }
+          // 画像がページの左端に達したら向きを反転
+          if (posX <= 0) {
+            speedX = 0.1;
+          }
+          // 画像がページの下端に達したら向きを反転
+          if (posY >= window.innerHeight - img.offsetHeight) {
+            speedY = -0.1;
+          }
+          // 画像がページの上端に達したら向きを反転
+          if (posY <= 0) {
+            speedY = 0.1;
+          }
+          // 画像の位置を更新
+          img.style.left = posX + 'px';
+          img.style.top = posY + 'px';
+          // 次のフレームでanimateを再度実行
+          requestAnimationFrame(animate);
+        }
+        // 初回実行
+        animate();
+      };
+
+      var firebaseConfig = {
+        apiKey: "AIzaSyDRbhOWlYEMpR3iaTW8biLXNa8wJ8XVmGY",
+        authDomain: "hakodate-hackathon.firebaseapp.com",
+        projectId: "hakodate-hackathon",
+        storageBucket: "hakodate-hackathon.appspot.com",
+        messagingSenderId: "967361469814",
+        appId: "1:967361469814:web:c3d84feed162f99e27ee57",
+        measurementId: "G-3CLJDG0DPQ"
+      };
+
+      var comments = []; // コメントを保存する配列
+
+      var commentInput = document.getElementById('commentInput');
+      var addCommentButton = document.getElementById('addCommentButton');
+      var commentList = document.getElementById('commentList');
+
+      // ボタンがクリックされたら
+      addCommentButton.onclick = function () {
+        var comment = commentInput.value.trim(); // 入力されたコメント
+
+        // 入力が空でなければコメントを配列に追加
+        if (comment !== '') {
+          comments.push(comment);
+          refreshComments(); // コメントリストを更新
+          commentInput.value = ''; // 入力欄をクリア
+        }
+      };
+
+      // コメントリストを更新する関数
+      function refreshComments() {
+        // まず既存のコメントをすべて削除
+        while (commentList.firstChild) {
+          commentList.removeChild(commentList.firstChild);
+        }
+
+        // 配列に保存された各コメントを表示
+        for (var i = 0; i < comments.length; i++) {
+          var p = document.createElement('p');
+          p.classList.add('comment');
+          p.textContent = comments[i];
+          commentList.appendChild(p);
+        }
+      }
+
+      firebase.initializeApp(firebaseConfig);
+      var db = firebase.firestore();
+
+      async function submitData() {
+        const name = document.getElementById('name').value;
+        const url = document.getElementById('url').value;
+        const address = document.getElementById('address').value;
+        const distance = document.getElementById('distance').value;
+        const price = document.getElementById('price').value;
+        const tag = document.getElementById('tag').value;
+        const businessHours = document.getElementById('businessHours').value;
+        const longtitude = document.getElementById('longtitude').value;
+        const latitude = document.getElementById('latitude').value;
+        const commentElements = document.querySelectorAll('#commentList .comment'); // コメント要素をすべて取得
+        const comments = Array.from(commentElements).map(function (el) {
+          return el.textContent; // 各要素のテキストを取得
+        });
+
+        await db.collection('Restaurants').add({
+          'name': name,
+          'url': url,
+          'address': address,
+          'distance': distance,
+          'price': price,
+          'tag': tag,
+          'businessHours': businessHours,
+          'longtitude': longtitude,
+          'latitude': latitude,
+          'comments': comments
+        });
+
+        alert('店舗情報を追加しました')
+        location.reload();
+      }
+
+      document.querySelector('input[type="button"]').addEventListener('click', submitData);
+    </script>
+  </body>
+</html>
